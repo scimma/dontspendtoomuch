@@ -3,6 +3,11 @@ provider "aws" {
   allowed_account_ids = ["585193511743"]
 }
 
+resource "aws_s3_bucket" "sourcecode" {
+  bucket = "dontspendtoomuch-source"
+  acl = "private"
+}
+
 resource "aws_secretsmanager_secret" "slack_hook_url" {
   name = "dontspendtoomuch-slack-hook-url"
   description = "Webhook URL for the dontspendtoomuch Slack app"
@@ -12,15 +17,28 @@ resource "aws_secretsmanager_secret" "slack_hook_url" {
   }
 }
 
+resource "aws_lambda_layer_version" "dependencies" {
+  layer_name = "dontspendtoomuch-dependencies"
+  description = "Python dependencies for the dontspendtoomuch script"
+
+  filename = "dontspendtoomuch-deps.zip"
+  source_code_hash = filebase64sha256("dontspendtoomuch-deps.zip")
+
+  compatible_runtimes = ["python3.6", "python3.7", "python3.8"]
+}
+
 resource "aws_lambda_function" "dontspendtoomuch" {
-  filename = "dontspendtoomuch-lambda.zip"
   function_name = "dontspendtoomuch-daily"
+
+  filename = "dontspendtoomuch-script.zip"
+  source_code_hash = filebase64sha256("dontspendtoomuch-script.zip")
   handler = "dontspendtoomuch.lambda_handler"
   runtime = "python3.8"
+  layers = [aws_lambda_layer_version.dependencies.arn]
+
   timeout = 120 // seconds
   reserved_concurrent_executions = 1
   role = aws_iam_role.dontspendtoomuch.arn
-  source_code_hash = filebase64sha256("dontspendtoomuch-lambda.zip")
 
   environment {
     variables = {
