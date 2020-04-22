@@ -104,3 +104,22 @@ resource "aws_iam_role_policy_attachment" "dontspendtoomuch" {
   role = aws_iam_role.dontspendtoomuch.name
   policy_arn = aws_iam_policy.dontspendtoomuch.arn
 }
+
+// Event scheduling
+resource "aws_cloudwatch_event_rule" "daily" {
+  name = "daily-at-7am-eastern"
+  description = "Trigger every day at 7AM Eastern Standard Time"
+  schedule_expression = "cron(0 12 * * ? *)" // 12 because this uses UTC; eastern is UTC+5
+}
+resource "aws_cloudwatch_event_target" "daily" {
+  rule = aws_cloudwatch_event_rule.daily.name
+  arn = aws_lambda_function.dontspendtoomuch.arn
+}
+
+resource "aws_lambda_permission" "allow_cloudwatch" {
+  statement_id  = "AllowExecutionFromCloudWatch"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.dontspendtoomuch.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.daily.arn
+}
