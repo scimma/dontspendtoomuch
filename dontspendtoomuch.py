@@ -97,9 +97,6 @@ def aws_date_string(date):
 def fetch(start, end):
     """Get data from AWS on cost and usage. Start and end should be strings in the
     format YYYY-MM-DD."""
-    print("initializing client")
-    id = boto3.client("sts").get_caller_identity()
-    print(f"identity: {id}")
     client = boto3.client("ce")
     return client.get_cost_and_usage(
         TimePeriod={
