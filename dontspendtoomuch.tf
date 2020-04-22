@@ -8,6 +8,14 @@ resource "aws_s3_bucket" "deployables" {
   acl = "private"
 }
 
+# Note that the following two data references have a bootstrapping problem. They
+# need to have the contents managed from outside of Terraform, since we want to
+# make modifications to them without running 'terraform apply.' That means that
+# they can't be 'resources', they need to be 'data' sources. In a clean start on
+# an empty AWS account, then, these keys will not exist.
+#
+# That means that the # Lambda will not be creatable though because these keys
+# won't exist.
 data "aws_s3_bucket_object" "script" {
   bucket = aws_s3_bucket.deployables.id
   key = "dontspendtoomuch/latest/script.zip"
