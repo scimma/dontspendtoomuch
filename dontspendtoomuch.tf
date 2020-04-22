@@ -3,9 +3,19 @@ provider "aws" {
   allowed_account_ids = ["585193511743"]
 }
 
-resource "aws_s3_bucket" "sourcecode" {
-  bucket = "dontspendtoomuch-source"
+resource "aws_s3_bucket" "deployables" {
+  bucket = "scimma-deployables"
   acl = "private"
+}
+
+data "aws_s3_bucket_object" "script" {
+  bucket = aws_s3_bucket.deployables.id
+  key = "dontspendtoomuch/latest/script.zip"
+}
+
+data "aws_s3_bucket_object" "dependencies" {
+  bucket = aws_s3_bucket.deployables.id
+  key = "dontspendtoomuch/latest/dependencies.zip"
 }
 
 resource "aws_secretsmanager_secret" "slack_hook_url" {
@@ -21,8 +31,9 @@ resource "aws_lambda_layer_version" "dependencies" {
   layer_name = "dontspendtoomuch-dependencies"
   description = "Python dependencies for the dontspendtoomuch script"
 
-  filename = "dontspendtoomuch-deps.zip"
-  source_code_hash = filebase64sha256("dontspendtoomuch-deps.zip")
+  s3_bucket = aws_s3_bucket.deployables.id
+  s3_key = data.aws_s3_bucket_object.dependencies.key
+  s3_object_version = data.aws_s3_bucket_object.dependencies.version_id
 
   compatible_runtimes = ["python3.6", "python3.7", "python3.8"]
 }
@@ -30,8 +41,10 @@ resource "aws_lambda_layer_version" "dependencies" {
 resource "aws_lambda_function" "dontspendtoomuch" {
   function_name = "dontspendtoomuch-daily"
 
-  filename = "dontspendtoomuch-script.zip"
-  source_code_hash = filebase64sha256("dontspendtoomuch-script.zip")
+  s3_bucket = aws_s3_bucket.deployables.id
+  s3_key = data.aws_s3_bucket_object.script.key
+  s3_object_version = data.aws_s3_bucket_object.script.version_id
+
   handler = "dontspendtoomuch.lambda_handler"
   runtime = "python3.8"
   layers = [aws_lambda_layer_version.dependencies.arn]

@@ -16,11 +16,11 @@ deploy: deploy-deps deploy-script
 
 .PHONY: deploy-deps
 deploy-deps: dontspendtoomuch-deps.zip
-	terraform apply -target=aws_lambda_layer_version.dependencies
+	aws s3 cp dontspendtoomuch-deps.zip s3://scimma-deployables/dontspendtoomuch/latest/dependencies.zip
 
 .PHONY: deploy-script
 deploy-script: dontspendtoomuch-script.zip
-	terraform apply -target=aws_lambda_function.dontspendtoomuch
+	aws s3 cp dontspendtoomuch-script.zip s3://scimma-deployables/dontspendtoomuch/latest/script.zip
 
 .PHONY: lambda
 lambda: dontspendtoomuch-script.zip dontspendtoomuch-deps.zip
