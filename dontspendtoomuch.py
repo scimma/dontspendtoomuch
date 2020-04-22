@@ -1,15 +1,33 @@
+import os
+import json
 import datetime
 import argparse
 import boto3
 import tabulate
+import requests
+
+
+def lambda_handler(event, context):
+    """ Entrypoint when running from within AWS Lambda """
+    start = aws_date_string(datetime.date.today() - datetime.timedelta(days=7))
+    end = aws_date_string(datetime.date.today())
+    data = fetch(start, end)
+    report = format_terminal_output(data)
+    print(report)
+
+    print("retrieving slack secrets")
+    secrets_client = boto3.client("secretsmanager")
+    secrets_response = secrets_client.get_secret_value(SecretId=os.getenv("SLACK_SECRETS_ARN"))
+    secrets = json.loads(secrets_response['SecretString'])
+    for channel, endpoint in secrets.items():
+        print(f"publishing to {channel}")
+        send_to_slack(endpoint, report)
 
 
 def main():
     args = parse_arguments()
     if args.email is not None:
         raise NotImplementedError("email reports are not yet implemented")
-    if args.slack is not None:
-        raise NotImplementedError("slack reports are not yet implemented")
 
     if args.n_days:
         start = aws_date_string(datetime.date.today() - datetime.timedelta(days=args.n_days))
@@ -20,7 +38,11 @@ def main():
 
     data = fetch(start, end)
 
-    print(format_terminal_output(data))
+    report = format_terminal_output(data)
+    if args.slack is not None:
+        for endpoint in args.slack:
+            send_to_slack(endpoint, report)
+    print(report)
 
 
 def parse_arguments(arguments=None):
@@ -29,7 +51,7 @@ def parse_arguments(arguments=None):
     parser.add_argument("--email", action="append",
                         help="Email address to send a report to. May be specified multiple times.")
     parser.add_argument("--slack", action="append",
-                        help="Slack channels to send a report to. May be specified multiple times.")
+                        help="Slack Webhook URL to send a report to. May be specified multiple times.")
 
     parser.add_argument("--start",
                         help="Oldest date to include in the report, in YYYY-MM-DD format.")
@@ -75,6 +97,9 @@ def aws_date_string(date):
 def fetch(start, end):
     """Get data from AWS on cost and usage. Start and end should be strings in the
     format YYYY-MM-DD."""
+    print("initializing client")
+    id = boto3.client("sts").get_caller_identity()
+    print(f"identity: {id}")
     client = boto3.client("ce")
     return client.get_cost_and_usage(
         TimePeriod={
@@ -84,6 +109,13 @@ def fetch(start, end):
         Granularity="DAILY",
         Metrics=["UNBLENDED_COST"],
     )
+
+
+def send_to_slack(webhook_url, report):
+    payload = {
+        "text": report,
+    }
+    requests.post(webhook_url, json=payload)
 
 
 def format_terminal_output(report):

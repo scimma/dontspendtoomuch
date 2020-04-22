@@ -3,13 +3,13 @@ from setuptools import setup
 install_requires = [
     "boto3",
     "tabulate",
-    "requests@git+https://github.com/psf/requests",
+    "requests"
 ]
 
 dev_requires = [
     "flake8",
     "autopep8",
-    "pytest",
+    "pytest"
 ]
 
 setup(
