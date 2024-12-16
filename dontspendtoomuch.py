@@ -13,6 +13,7 @@ def lambda_handler(event, context):
     end = aws_date_string(datetime.date.today())
     data = fetch(start, end)
     report = format_terminal_output(data)
+    report += fetch_reserved_instances()
     print(report)
 
     print("retrieving slack secrets")
@@ -37,8 +38,9 @@ def main():
         end = args.end
 
     data = fetch(start, end)
-
     report = format_terminal_output(data)
+    report += fetch_reserved_instances()
+
     if args.slack is not None:
         for endpoint in args.slack:
             send_to_slack(endpoint, report)
@@ -52,7 +54,6 @@ def parse_arguments(arguments=None):
                         help="Email address to send a report to. May be specified multiple times.")
     parser.add_argument("--slack", action="append",
                         help="Slack Webhook URL to send a report to. May be specified multiple times.")
-
     parser.add_argument("--start",
                         help="Oldest date to include in the report, in YYYY-MM-DD format.")
     parser.add_argument("--end",
@@ -106,6 +107,33 @@ def fetch(start, end):
         Granularity="DAILY",
         Metrics=["UNBLENDED_COST"],
     )
+
+
+def fetch_reserved_instances():
+    """ Fetch reserved instnace information so we see when things expire"""
+    # Initialize the EC2 client
+    ec2 = boto3.client('ec2')
+
+    # Fetch all reserved instances
+    response = ec2.describe_reserved_instances()
+    reserved_instances = response['ReservedInstances']
+
+    items = []
+    for ri in reserved_instances:
+        instance_type = ri['InstanceType']
+        zone = ri['AvailabilityZone']
+
+        date = ri['End']
+        expires = f"{date.year}-{date.month}-{date.day}"
+        count = ri['InstanceCount']
+        offering = ri['OfferingClass']
+        li = f"until {expires} {instance_type}@{zone} ({count} instances) ({offering} offering)"
+        items.append(li)
+
+    items.sort
+    all = "\n".join(items)
+    all = "\n\n      Reserved Instance Report\n" + all
+    return all
 
 
 def send_to_slack(webhook_url, report):
