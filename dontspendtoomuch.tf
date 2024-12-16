@@ -43,7 +43,7 @@ resource "aws_lambda_layer_version" "dependencies" {
   s3_key = data.aws_s3_bucket_object.dependencies.key
   s3_object_version = data.aws_s3_bucket_object.dependencies.version_id
 
-  compatible_runtimes = ["python3.6", "python3.7", "python3.8"]
+  compatible_runtimes = ["python3.8", "python3.10"]
 }
 
 resource "aws_lambda_function" "dontspendtoomuch" {
