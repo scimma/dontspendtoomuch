@@ -110,7 +110,7 @@ def fetch(start, end):
 
 
 def fetch_reserved_instances():
-    """ Fetch reserved instnace information so we see when things expire"""
+    """ Fetch reserved instance information so we see when things expire"""
     # Initialize the EC2 client
     ec2 = boto3.client('ec2')
 
@@ -121,27 +121,43 @@ def fetch_reserved_instances():
     items = []
     for ri in reserved_instances:
         instance_type = ri['InstanceType']
-        zone = ri['AvailabilityZone']
+        # State the availability zone when reservations are
+        # Specific to an availabliles zone...
+        zone = ri.get('AvailabilityZone', 'us-west-2')
 
         date = ri['End']
         expires = f"{date.year}-{date.month}-{date.day}"
         count = ri['InstanceCount']
         offering = ri['OfferingClass']
-        li = f"until {expires} {instance_type}@{zone} ({count} instances) ({offering} offering)"
+        li = [expires, instance_type, zone, count,  offering]
         items.append(li)
 
-    items.sort
-    all = "\n".join(items)
-    all = "\n\n      Reserved Instance Report\n" + all
+    items.sort()
+    all = tabulate.tabulate(items, headers=["expires", "type", "zone", "count", "offering"])
+    all = "\n\n      Reserved Instance Report for us-west-2\n\n" + all
     return all
 
-
+"""
 def send_to_slack(webhook_url, report):
     payload = {
         "text": report,
     }
     requests.post(webhook_url, json=payload)
-
+"""
+def send_to_slack(webhook_url, report):
+    payload = {
+        "text": "test to improve formatting",
+        "blocks": [
+            {
+                "type": "section",
+                "text": {
+                    "type": "plain_text",
+                    "text": report
+                }
+            }
+        ]
+    }
+    requests.post(webhook_url, json=payload)
 
 def format_terminal_output(report):
     """Format the response from a CostExplorer GetCostAndUsage report into a
@@ -153,3 +169,4 @@ def format_terminal_output(report):
 
 if __name__ == "__main__":
     main()
+
