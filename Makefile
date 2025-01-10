@@ -47,7 +47,7 @@ lint: venv
 
 .PHONY: format
 format: venv
-	. venv/bin/activate; autopep8 .
+	. venv/bin/activate; autopep8 --in-place *.py
 
 venv: venv/bin/activate
 venv/bin/activate: setup.py
