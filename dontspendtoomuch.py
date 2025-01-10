@@ -158,12 +158,15 @@ def fetch_reserved_utilization():
         }
     )
     total = resp["Total"]
+    util = float(total["UtilizationPercentage"])
+    od_cost = float(total["OnDemandCostOfRIHoursUsed"])
+    savings = float(total["RealizedSavings"])
     report = f"""
 
     ****  30 day reserved utilization report 
-    Percentage of all reservations actually utilized: {total["UtilizationPercentage"]}
-    On Demand Cost for these items: ${total["OnDemandCostOfRIHoursUsed"]}
-    Realized Savings: ${total["RealizedSavings"]}
+    Percentage of all reservations actually utilized: {util:.2f}
+    On Demand Cost for these items: ${od_cost:.2f}
+    Realized Savings: ${savings:.2f}
     
     """
     return report
