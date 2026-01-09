@@ -9,8 +9,8 @@ help :
 	@echo '  make format                run code formatter, giving a diff for recommended changes'
 	@echo '  make venv                  prepare virtualenv'
 	@echo '  make lambda                build lambda-deployable zip archives'
-	@echo '  make deploy                rebuild lambda and push it up'
-	@echo
+	@echo '  make deploy                rebuild lambda and push it up' -- does not activate the code
+	@echo :  make deploy-activate       Casue the most recent deploy=ed code to be used as the lamda code
 
 .PHONY: deploy
 deploy: deploy-deps deploy-script
@@ -22,6 +22,13 @@ deploy-deps: dontspendtoomuch-deps.zip
 .PHONY: deploy-script
 deploy-script: dontspendtoomuch-script.zip
 	aws s3 cp dontspendtoomuch-script.zip s3://scimma-deployables/dontspendtoomuch/latest/script.zip
+
+.PHONY: deploy-activate
+deploy-activate: dontspendtoomuch-script.zip
+	aws lambda update-function-code \
+                  --function-name dontspendtoomuch \
+                  --s3-bucket scimma-deployables \
+                  --s3-key dontspendtoomuch/latest/script.zip
 
 .PHONY: lambda
 lambda: dontspendtoomuch-script.zip dontspendtoomuch-deps.zip

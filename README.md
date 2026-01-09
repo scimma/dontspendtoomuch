@@ -1,7 +1,7 @@
 # dontspendtoomuch #
 
 This is a little script for getting cost data from AWS and publishing it to
-email and slack channels.
+email and slack channels. 
 
 ## Installation ##
 Clone, and then `pip install .`. You now have `dontspendtoomuch.py` installed.
@@ -24,6 +24,15 @@ optional arguments:
 ```
 
 ## Development ##
+This barnch is used for deployiing as a lambda.
+
+== inspect Makefile variables -- for using the terrafrom managed python version
+# make venv            # This is custom method for this project.
+== Make changes to python code. you might also want to interact with AWS cosole  editor/tester to verify your changes.
+# make deploy          # Bundle and push the code to S3 (code is not yet used by lambda)
+# make deploy-activate # Make the most recent deploy used by the lambda
+
+Note that there is a teraaform module in aws-dev that sets the lambda environment up, including the python version 
 
 Prerequisities: GNU Make and `virtualenv`. Then, lint with `make lint` and test
 with `make test`.
