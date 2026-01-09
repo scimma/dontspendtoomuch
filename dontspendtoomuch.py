@@ -57,7 +57,7 @@ def parse_arguments(arguments=None):
     parser.add_argument("--email", action="append",
                         help="Email address to send a report to. May be specified multiple times.")
     parser.add_argument("--slack", action="append",
-                        help="Slack Webhook URL to send a report to. May be specified multiple times.")
+                        help="Slack Webhook URL to report to. May be specified multiple times.")
     parser.add_argument("--start",
                         help="Oldest date to include in the report, in YYYY-MM-DD format.")
     parser.add_argument("--end",
@@ -127,6 +127,8 @@ def fetch_reserved_instances():
 
     items = []
     for ri in reserved_instances:
+        if ri["State"] != "active":
+            continue
         instance_type = ri['InstanceType']
         # State the availability zone when reservations are
         # Specific to an availabliles zone...
@@ -163,11 +165,11 @@ def fetch_reserved_utilization():
     savings = float(total["RealizedSavings"])
     report = f"""
 
-    ****  30 day reserved utilization report 
+    ****  30 day reserved utilization report
     Percentage of all reservations actually utilized: {util:.2f}
     On Demand Cost for these items: ${od_cost:.2f}
     Realized Savings: ${savings:.2f}
-    
+
     """
     return report
 

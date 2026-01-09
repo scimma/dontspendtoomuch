@@ -1,4 +1,5 @@
 .PHONY: help
+PYTHON=python3.12
 help :
 	@echo
 	@echo 'Commands:'
@@ -50,8 +51,9 @@ format: venv
 	. venv/bin/activate; autopep8 --in-place *.py
 
 venv: venv/bin/activate
+
 venv/bin/activate: setup.py
-	virtualenv venv
+	$(PYTHON) -m venv  venv
 	. venv/bin/activate; pip install -e '.[dev]'
 
 .PHONY: clean
